@@ -72,6 +72,11 @@ class skittle_PathResourceLocator implements skittle_IResourceLocator {
      * @return string
      */
     public function find($target, $realPath = false) {
+        
+        if ( strpos($target, '/') === 0 ) {
+            if ( file_exists($target) ) return $realPath ? realpath($target) : $target;
+            return null;
+        }
 
         foreach ( $this->allPaths() as $path ) {
             $testLocation = $path . '/' . $target;

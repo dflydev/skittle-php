@@ -95,6 +95,18 @@ class skittle_Skittle {
      * @var skittle_IResourceLocator
      */
     protected $resourceLocator;
+    
+    /**
+     * Name of the shell template
+     * @var string
+     */
+    protected $shell = null;
+    
+    /**
+     * Name of the view content key
+     * @var string
+     */
+    protected $shellContentKey = 'skittleViewContent';
 
     /**
      * Constructor.
@@ -115,6 +127,20 @@ class skittle_Skittle {
         
         $this->resourceLocator = $resourceLocator;
         
+    }
+    
+    /**
+     * Sets the shell to be wrapped around the include
+     * 
+     * Only wraps the outermost include, so be certain that this method
+     * is called when it makes sense.
+     * 
+     * @param $shell
+     * @param $key
+     */
+    public function shell($shell, $key = null) {
+        $this->shell = $shell;
+        if ( $key !== null ) { $this->shellContentKey = $key; }
     }
 
     /**
@@ -300,7 +326,7 @@ class skittle_Skittle {
 
             // Clean up the skittle buffer. PHP has a weird habit of adding extra trailing
             // newlines that are not always desired.
-            return preg_replace('/[\r\n]$/s', '', $_____skittle_buffer);
+            $renderedContent = preg_replace('/[\r\n]$/s', '', $_____skittle_buffer);
 
         } else {
             // If the include is not found, return an HTML comment so that there is
@@ -308,8 +334,15 @@ class skittle_Skittle {
             // TODO This is maybe not the best way to handle this. An exception or an
             // error_log call may be more appropriate. Not all output will be HTML and
             // this could do more harm than good.
-            return "<!-- include '$path' not found -->\n";
+            $renderedContent = "<!-- include '$path' not found -->\n";
         }
+        
+        if ( $this->shell ) {
+            $shell = $this->shell;
+            $this->shell = null;
+            $renderedContent = $this->stringInc($shell, array($this->shellContentKey => $renderedContent,), $d);
+        }
+        return $renderedContent;
 
     }
 
