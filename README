@@ -1,0 +1,7 @@
+Skittle
+http://github.com/dflydev/skittle-php
+
+Skittle is a lightweight pure PHP template inclusion library. Its primary goal
+is to allow for the easy inclusion of template fragments into other templates.
+Originally designed to be used with Halo, Skittle has been extracted so that
+it can be used on its own.
