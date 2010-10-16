@@ -107,6 +107,12 @@ class skittle_Skittle {
      * @var string
      */
     protected $shellContentKey = 'skittleViewContent';
+    
+    /**
+     * Global data
+     * @var array
+     */
+    protected $globalData = array();
 
     /**
      * Constructor.
@@ -280,6 +286,9 @@ class skittle_Skittle {
 
         // Get the real path to the template.
         $realPath = $this->resourceLocator->find($path);
+        
+        // Final exported data (in case this is the last pass)
+        $finalExportedData = array();
 
         if ( $realPath and file_exists($realPath) ) {
 
@@ -319,6 +328,10 @@ class skittle_Skittle {
             // Get rid of the stored data.
             array_pop($this->storedData);
             array_pop($this->storedExportedData);
+            
+            // In case this is the last pass we want to know what
+            // was exported.
+            $finalExportedData = $this->currentExportedData;
 
             // Restore our data.
             $this->currentData = $lastData;
@@ -337,10 +350,12 @@ class skittle_Skittle {
             $renderedContent = "<!-- include '$path' not found -->\n";
         }
         
-        if ( $this->shell ) {
+        if ( $this->shell and $this->currentData === null ) {
             $shell = $this->shell;
             $this->shell = null;
-            $renderedContent = $this->stringInc($shell, array($this->shellContentKey => $renderedContent,), $d);
+            $this->globalData[$this->shellContentKey] = $renderedContent;
+            $renderedContent = $this->stringInc($shell, array_merge($d, $finalExportedData, $this->globalData));
+            $this->globalData = array();
         }
         return $renderedContent;
 
@@ -526,6 +541,27 @@ class skittle_Skittle {
      */
     public function export($name, $value = null) {
         return $this->currentExportedData[$name] = $value;
+    }
+    
+    /**
+     * Set a named value in the global scope
+     * 
+     * Values set here will be extracted for the shell (if one is used)
+     * and can also be retrieved using get().
+     * 
+     * @param $name
+     * @param $value
+     */
+    public function set($name, $value = null) {
+        return $this->globalData[$name] = $value;
+    }
+
+    /**
+     * Get a named value from the global scope
+     * @param string $name
+     */
+    public function get($name) {
+        return isset($this->globalData[$name]) ? $this->globalData[$name] : null;
     }
 
     /**
