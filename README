@@ -1,5 +1,5 @@
 Skittle
-http://github.com/dflydev/skittle-php
+http://skittle-php.org/
 
 Skittle is a lightweight pure PHP template inclusion library. Its primary goal
 is to allow for the easy inclusion of template fragments into other templates.
