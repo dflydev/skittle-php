@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+<project name="skittle-php" default="default" basedir=".">
+
+    <property file="build.properties" />
+    
+    <property name="paths.build" value="${project.basedir}/build" />
+    <property name="paths.dist" value="${project.basedir}/dist" />
+    <property name="paths.repo" value="${project.basedir}/repos" />
+    
+    <property name="skittle.repository.url" value="git://github.com/dflydev/skittle-php.git" />
+    <property name="skittle.repository.path" value="${paths.repo}/skittle-php" />
+    
+    <fileset dir="${skittle.repository.path}/lib" id="skittle-libs">
+        <include name="*.php" />
+    </fileset>
+
+    <fileset dir="${skittle.repository.path}" id="skittle-misc">
+        <include name="README" />
+        <include name="LICENSE" />
+    </fileset>
+    
+    <tstamp>
+        <format property="DSTAMP" pattern="%Y%m%d" />
+        <format property="TSTAMP" pattern="%H%M%S" />
+    </tstamp>
+    
+    <target name="version">
+        <if>
+            <isset property="skittle.tag" />
+            <then><property name="skittle.version" value="${skittle.tag}" /></then>
+            <else>
+                <if>
+                    <not><isset property="skittle.snapshotVersion" /></not>
+                    <then>
+                        <property name="skittle.snapshotVersion" value="snapshot-${DSTAMP}${TSTAMP}" />
+                    </then>
+                </if>
+                <if>
+                    <isset property="skittle.branch" />
+                    <then><property name="skittle.version" value="${skittle.branch}-${skittle.snapshotVersion}" /></then>
+                    <else><property name="skittle.version" value="${skittle.snapshotVersion}" /></else>
+                </if>
+            </else>
+        </if>
+    </target>
+    
+    <target name="setProperties" depends="version">
+        <property name="skittle.pkgname.basic" value="skittle-${skittle.version}" />
+	    <property name="skittle.build.basic.path" value="${paths.build}/${skittle.pkgname.basic}" />
+	    <property name="skittle.dist.basic.zipfile" value="${paths.dist}/${skittle.pkgname.basic}.zip" />
+	    <property name="skittle.dist.basic.tgzfile" value="${paths.dist}/${skittle.pkgname.basic}.tar.gz" />
+    </target>
+    
+    <target name="prep">
+        <mkdir dir="${paths.build}" />
+        <mkdir dir="${paths.dist}" />
+    </target>
+    
+    <target name="cleanBuild">
+        <delete dir="${paths.build}" />
+    </target>
+    
+    <target name="cleanDist">
+        <delete dir="${paths.dist}" />
+    </target>
+    
+    <target name="cleanRepos">
+        <delete dir="${paths.repos}" />
+    </target>
+    
+    <target name="clean" depends="cleanBuild,cleanDist" />
+    <target name="realClean" depends="clean,cleanRepos" />
+    <target name="realclean" depends="realClean" />
+    
+    <target name="update" depends="prep">
+        <if>
+            <available file="${skittle.repository.path}" />
+            <then>
+                <!-- Eventually we want to do a fetch / merge or a pull here -->
+                <!--
+                <delete dir="${skittle.repository.path}" />
+                <mkdir dir="${skittle.repository.path}" />
+                <gitclone repository="${skittle.repository.url}" targetPath="${skittle.repository.path}" />
+                -->
+                <gitpull repository="${skittle.repository.path}" tags="true" />
+            </then>
+            <else>
+		        <mkdir dir="${skittle.repository.path}" />
+		        <gitclone repository="${skittle.repository.url}" targetPath="${skittle.repository.path}" />
+            </else>
+        </if>
+        <if>
+            <isset property="skittle.tag" />
+            <then>
+                <gitcheckout repository="${skittle.repository.path}" branchname="v${skittle.tag}" />
+            </then>
+            <else>
+                <if>
+                    <isset property="skittle.branch" />
+                    <then>
+                        <!--<gitcheckout repository="${skittle.repository.path}" create="true" branchname="${skittle.branch}" startPoint="origin/${skittle.branch}" />-->
+                        <gitcheckout repository="${skittle.repository.path}" create="true" branchname="${skittle.branch}" startPoint="origin/${skittle.branch}" />
+                    </then>
+                    <else>
+                        <gitcheckout repository="${skittle.repository.path}" branchname="master" />
+                    </else>
+                </if>
+            </else>
+        </if>
+    </target>
+
+    <target name="buildBasic">
+        <copy toDir="${skittle.build.basic.path}" mode="0755">
+            <fileset refid="skittle-libs"/>
+            <fileset refid="skittle-misc"/>
+        </copy>
+        <chmod mode="0755">
+            <fileset dir="${skittle.build.basic.path}">
+                <include name="*.php" />
+                <include name="README" />
+                <include name="LICENSE" />
+            </fileset>
+        </chmod>
+    </target>
+
+    <target name="build" depends="setProperties,update,cleanBuild,buildBasic" />
+    
+    <target name="distBasic" depends="build">
+
+        <mkdir dir="${paths.dist}" />
+
+        <delete file="${skittle.dist.basic.tgzfile}" />
+        <tar compression="gzip" destFile="${skittle.dist.basic.tgzfile}" basedir="${skittle.build.basic.path}" prefix="${skittle.pkgname.basic}" />
+
+        <delete file="${skittle.dist.basic.zipfile}" />
+        <zip destFile="${skittle.dist.basic.zipfile}" basedir="${skittle.build.basic.path}" prefix="${skittle.pkgname.basic}/" />
+        
+    </target>
+    
+    <target name="dist" depends="distBasic" />
+
+    <target name="default" depends="version">
+        <echo>Skittle - ${skittle.version}</echo>
+        <echo />
+        <echo>Targets:</echo>
+        <echo>    clean      - Cleans build and dist</echo>
+        <echo>    update     - Updates build files</echo>
+        <echo>    build      - Builds package</echo>
+        <echo>    dist       - Creates distribution archives</echo>
+        <echo />
+        <echo>    realclean  - Cleans everything</echo>
+        <echo />
+        <echo>Properties:</echo>
+        <echo>    skittle.tag              - Skittle tag to use</echo>
+        <echo>    skittle.branch           - Skittle branch to use</echo>
+        <echo>    skittle.version          - Skittle version to use</echo>
+        <echo>    skittle.snapshotVersion  - Skittle snapshot version to use (branches)</echo>
+        <echo>    skittle.repository.url   - URL for Skittle Git Repository</echo>
+    </target>
+    
+</project>

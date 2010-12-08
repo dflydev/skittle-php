@@ -381,11 +381,11 @@ class skittle_Skittle {
      *
      * @param string $variableName Variable name to be used
      * @param string $helperName Actual name of the helper if different from the variable name
-     * @see getHelper()
+     * @see helper()
      */
     public function addHelper($variableName, $helperName = null) {
         if ( $helperName === null ) $helperName = $variableName;
-        $this->helpers[$variableName] = $this->getHelper($helperName);
+        $this->helpers[$variableName] = $this->helper($helperName);
     }
 
     /**
@@ -440,8 +440,8 @@ class skittle_Skittle {
     
     /**
      * @deprecated
-     * @param $helperName
-     * @param $exceptionOnMissing
+     * @param string $helperName Name of helper to get
+     * @param boolean $exceptionOnMissing Throw an exception of the helper cannot be found
      */
     public function getHelper($helperName, $exceptionOnMissing = true) {
         return $this->deprecated()->helper($helperName, $exceptionOnMissing);
@@ -469,7 +469,7 @@ class skittle_Skittle {
         }
         foreach ( $this->helperMappings as $helperMapping ) {
             // Ask each helper mapping for this helper.
-            $helper = $helperMapping->getHelper($helperName);
+            $helper = $helperMapping->helper($helperName);
             if ( $helper !== null  ) {
                 // If the helper was found, store it for us to use
                 // later and then retrieve the helper.
@@ -482,7 +482,15 @@ class skittle_Skittle {
         }
         return null;
     }
-
+    
+    /**
+     * @return array All helpers available from all of the helper mappings.
+     * @deprecated
+     */
+    public function getHelpers() {
+        return $this->deprecated()->helpers();
+    }
+    
     /**
      * Get all of the helpers.
      *
@@ -491,15 +499,15 @@ class skittle_Skittle {
      * be avoided, especially if there are some costly helpers to create.
      * @return array All helpers available from all of the helper mappings.
      */
-    public function getHelpers() {
+    public function helpers() {
         $allHelpers = array();
         foreach ( $this->helperMappings as $helperMapping ) {
-            foreach ( $helperMapping->getHelperNames() as $helperName ) {
+            foreach ( $helperMapping->helperNames() as $helperName ) {
                 // TODO We might want to handle this differently so that naming
                 // collisions are handled in a consistent way.
                 $allHelpers[$helperName] = $this->retrieveHelper(
                     $helperName,
-                    $helperMapping->getHelper($helperName)
+                    $helperMapping->helper($helperName)
                 );
             }
         }
